@@ -1,0 +1,21 @@
+name: Bug
+description: Report a problem with install.sh or these docs
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: The command you ran, what you expected and what you got.
+    validations:
+      required: true
+  - type: textarea
+    id: output
+    attributes:
+      label: Output
+      description: The output of ./install.sh --check, with any private paths removed.
+      render: text
+  - type: input
+    id: system
+    attributes:
+      label: System
+      description: OS and version, and the output of python3 --version.

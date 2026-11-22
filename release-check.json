@@ -1,0 +1,133 @@
+{
+  "exclude": [],
+  "quickstart": [
+    {
+      "file": "README.md",
+      "line": 51,
+      "argv": [
+        "./cold"
+      ]
+    }
+  ],
+  "checks": [
+    {
+      "role": "tests",
+      "argv": [
+        "python3",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ],
+      "timeout": 900
+    }
+  ],
+  "approvals": [
+    {
+      "scope": "tree",
+      "kind": "private-repo-url",
+      "path": "README.md",
+      "fingerprint": "2a6583dcca3bb8bc",
+      "reason": "Product name the umbrella announces; no private repository is linked."
+    },
+    {
+      "scope": "tree",
+      "kind": "private-repo-url",
+      "path": "README.md",
+      "fingerprint": "9f496bbd8450a598",
+      "reason": "Product name the umbrella announces; no private repository is linked."
+    },
+    {
+      "scope": "tree",
+      "kind": "private-repo-url",
+      "path": "docs/how-it-works.md",
+      "fingerprint": "2a6583dcca3bb8bc",
+      "reason": "Product name the umbrella announces; no private repository is linked."
+    },
+    {
+      "scope": "tree",
+      "kind": "private-repo-url",
+      "path": "docs/how-it-works.md",
+      "fingerprint": "d28fb022673ebcec",
+      "reason": "Command name in the documented integration contract; no private repository is linked."
+    },
+    {
+      "scope": "tree",
+      "kind": "private-repo-url",
+      "path": "docs/how-it-works.md",
+      "fingerprint": "ad5b3663b6489169",
+      "reason": "Required Coldrelease manifest filename, not a repository reference."
+    },
+    {
+      "scope": "tree",
+      "kind": "private-repo-url",
+      "path": "[path-d2910b1ab7f21683]",
+      "fingerprint": "ad5b3663b6489169",
+      "reason": "Required Coldrelease manifest filename, not a repository reference."
+    },
+    {
+      "scope": "history",
+      "kind": "private-repo-url",
+      "path": "README.md",
+      "fingerprint": "2a6583dcca3bb8bc",
+      "reason": "Product name the umbrella announces; no private repository is linked."
+    },
+    {
+      "scope": "history",
+      "kind": "private-repo-url",
+      "path": "README.md",
+      "fingerprint": "9f496bbd8450a598",
+      "reason": "Product name the umbrella announces; no private repository is linked."
+    },
+    {
+      "scope": "history",
+      "kind": "private-repo-url",
+      "path": "docs/how-it-works.md",
+      "fingerprint": "2a6583dcca3bb8bc",
+      "reason": "Product name the umbrella announces; no private repository is linked."
+    },
+    {
+      "scope": "history",
+      "kind": "private-repo-url",
+      "path": "docs/how-it-works.md",
+      "fingerprint": "d28fb022673ebcec",
+      "reason": "Command name in the documented integration contract; no private repository is linked."
+    },
+    {
+      "scope": "history",
+      "kind": "private-repo-url",
+      "path": "docs/how-it-works.md",
+      "fingerprint": "ad5b3663b6489169",
+      "reason": "Required Coldrelease manifest filename, not a repository reference."
+    },
+    {
+      "scope": "history",
+      "kind": "private-repo-url",
+      "path": "[path-d2910b1ab7f21683]",
+      "fingerprint": "ad5b3663b6489169",
+      "reason": "Required Coldrelease manifest filename, not a repository reference."
+    },
+    {
+      "scope": "tree",
+      "kind": "fleet-cli",
+      "path": "[path-c49f78a6eba6ad51]",
+      "fingerprint": "f95f501875dbc624",
+      "line": 47,
+      "source_sha256": "66ffd7e7b4e3bc48cd17fadc5e4ee700d7482bf86a7c91710868d7533ee1e936",
+      "classification": "false-positive",
+      "reason": "Documents the public umbrella launcher health check in the generated command reference."
+    },
+    {
+      "scope": "history",
+      "kind": "fleet-cli",
+      "path": "[path-c49f78a6eba6ad51]",
+      "fingerprint": "f95f501875dbc624",
+      "line": 47,
+      "source_sha256": "66ffd7e7b4e3bc48cd17fadc5e4ee700d7482bf86a7c91710868d7533ee1e936",
+      "classification": "false-positive",
+      "reason": "Documents the public umbrella launcher health check in the generated command reference."
+    }
+  ]
+}

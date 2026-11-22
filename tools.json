@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "tools": [
+    {
+      "id": "coldbox",
+      "name": "Coldbox",
+      "availability": "public source",
+      "url": "https://github.com/TayHCode/coldbox",
+      "cold_install": true,
+      "install": "cold install coldbox --apply",
+      "capability": "Run CI jobs in disposable VMs on your own hardware.",
+      "json": "coldbox status --json. The API uses exit codes 75 and 125 for retry and infrastructure failure.",
+      "agent_entrypoints": "coldbox api version"
+    },
+    {
+      "id": "coldcleaner",
+      "name": "Coldcleaner",
+      "availability": "public source",
+      "url": "https://github.com/TayHCode/coldcleaner",
+      "cold_install": true,
+      "install": "cold install coldcleaner --apply",
+      "capability": "Preview disk cleanup and verify archives before deleting files.",
+      "json": "coldcleaner doctor --json reports prerequisites. Exit 0 means success, 1 a finding or refusal, and 2 an error.",
+      "agent_entrypoints": null
+    },
+    {
+      "id": "coldlocker",
+      "name": "Coldlocker",
+      "availability": "public source",
+      "url": "https://github.com/TayHCode/coldlocker",
+      "cold_install": true,
+      "install": "cold install coldlocker --apply",
+      "capability": "Share skills, rules, hooks and MCP across agents.",
+      "json": "coldlocker scan --json emits the inventory.",
+      "agent_entrypoints": "Connect a client to the stdio MCP endpoint, then use hub_list_skills and hub_get_item."
+    },
+    {
+      "id": "coldfix",
+      "name": "Coldfix",
+      "availability": "public source",
+      "url": "https://github.com/TayHCode/coldfix",
+      "cold_install": true,
+      "install": "cold install coldfix --apply",
+      "capability": "Scan for recurring agent mistakes and rerun proofs from the lesson library.",
+      "json": "coldfix check --json REPO exits 0 for clean, 1 for findings and 2 for incomplete or error.",
+      "agent_entrypoints": "See the repository for ColdRecall hook setup."
+    },
+    {
+      "id": "coldvault",
+      "name": "Coldvault",
+      "availability": "public source",
+      "url": "https://github.com/TayHCode/coldvault",
+      "cold_install": true,
+      "install": "cold install coldvault --apply",
+      "capability": "Search a local vault of agent conversations and repository notes.",
+      "json": "python3 coldvault.py search QUERY --json --vault VAULT returns an object with schema_version 1 and a hits array. Exit 0 means matches, 1 means no matches, and 2 returns a JSON object with an error field.",
+      "agent_entrypoints": null
+    },
+    {
+      "id": "coldpass",
+      "name": "Coldpass",
+      "availability": "web only",
+      "url": "https://coldpass.dev",
+      "cold_install": false,
+      "install": null,
+      "capability": "Browse public README trial results and run evidence.",
+      "json": "Read the public API at https://coldpass.dev/api/v1/index.json.",
+      "agent_entrypoints": "The downloadable client provides stdio MCP. See https://coldpass.dev/llms.txt."
+    },
+    {
+      "id": "coldrelease",
+      "name": "Coldrelease",
+      "availability": "public source",
+      "url": "https://github.com/TayHCode/coldrelease",
+      "cold_install": true,
+      "install": "cold install coldrelease --apply",
+      "capability": "Scan and verify an export before making it public.",
+      "json": "coldrelease --version --json and coldrelease audit . --json report schema version 1.",
+      "agent_entrypoints": null
+    },
+    {
+      "id": "coldverify",
+      "name": "Coldverify",
+      "availability": "public source",
+      "url": "https://github.com/TayHCode/coldverify",
+      "cold_install": true,
+      "install": "cold install coldverify --apply",
+      "capability": "Replay an observed failure and its fix across two revisions.",
+      "json": "coldverify --version --json returns schema_version, exit_code and version data.",
+      "agent_entrypoints": null
+    },
+    {
+      "id": "coldguardian",
+      "name": "Coldguardian",
+      "availability": "public source",
+      "url": "https://github.com/TayHCode/coldguardian",
+      "cold_install": true,
+      "install": "cold install coldguardian --apply",
+      "capability": "Check approved home networks for changes and risky services.",
+      "json": "coldguardian status --json validates local configuration without starting a scan.",
+      "agent_entrypoints": null
+    },
+    {
+      "id": "coldrewind",
+      "name": "ColdRewind",
+      "availability": "public source",
+      "url": "https://github.com/TayHCode/coldrewind",
+      "cold_install": true,
+      "install": "cold install coldrewind --apply",
+      "capability": "Checkpoint a workspace and restore local files and Git state.",
+      "json": "coldrewind status --json reports the workspace snapshot backend and last capture error.",
+      "agent_entrypoints": "coldrewind init --client claude installs hooks for Claude Code. The codex and opencode clients are also supported."
+    },
+    {
+      "id": "coldcontribute",
+      "name": "Coldcontribute",
+      "availability": "parked",
+      "url": null,
+      "cold_install": false,
+      "install": null,
+      "capability": "Find contribution opportunities requested by maintainers.",
+      "json": null,
+      "agent_entrypoints": null
+    }
+  ]
+}

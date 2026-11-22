@@ -1,0 +1,16 @@
+# Cold Stack
+
+See [tools.json](tools.json) for machine-readable discovery and
+[llms-full.txt](llms-full.txt) for command and output details.
+
+- [Coldbox](https://github.com/TayHCode/coldbox) (public source, cold install: yes). Run CI jobs in disposable VMs on your own hardware.
+- [Coldcleaner](https://github.com/TayHCode/coldcleaner) (public source, cold install: yes). Preview disk cleanup and verify archives before deleting files.
+- [Coldlocker](https://github.com/TayHCode/coldlocker) (public source, cold install: yes). Share skills, rules, hooks and MCP across agents.
+- [Coldfix](https://github.com/TayHCode/coldfix) (public source, cold install: yes). Scan for recurring agent mistakes and rerun proofs from the lesson library.
+- [Coldvault](https://github.com/TayHCode/coldvault) (public source, cold install: yes). Search a local vault of agent conversations and repository notes.
+- [Coldpass](https://coldpass.dev) (web only, cold install: no). Browse public README trial results and run evidence.
+- [Coldrelease](https://github.com/TayHCode/coldrelease) (public source, cold install: yes). Scan and verify an export before making it public.
+- [Coldverify](https://github.com/TayHCode/coldverify) (public source, cold install: yes). Replay an observed failure and its fix across two revisions.
+- [Coldguardian](https://github.com/TayHCode/coldguardian) (public source, cold install: yes). Check approved home networks for changes and risky services.
+- [ColdRewind](https://github.com/TayHCode/coldrewind) (public source, cold install: yes). Checkpoint a workspace and restore local files and Git state.
+- Coldcontribute (parked, cold install: no). Find contribution opportunities requested by maintainers.
