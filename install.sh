@@ -1,19 +1,20 @@
 #!/bin/sh
-catalog='coldbox|public source|https://github.com/TayHCode/coldbox|coldbox
-coldcleaner|public source|https://github.com/TayHCode/coldcleaner|-m coldcleaner
-coldlocker|public source|https://github.com/TayHCode/coldlocker|hub.py
-coldfix|public source|https://github.com/TayHCode/coldfix|coldfix.py
-coldvault|public source|https://github.com/TayHCode/coldvault|vault_kit.py
+{
+catalog='coldbox|public source|https://github.com/coldstack-dev/coldbox|coldbox
+coldcleaner|public source|https://github.com/coldstack-dev/coldcleaner|-m coldcleaner
+coldlocker|public source|https://github.com/coldstack-dev/coldlocker|hub.py
+coldfix|public source|https://github.com/coldstack-dev/coldfix|coldfix.py
+coldvault|public source|https://github.com/coldstack-dev/coldvault|vault_kit.py
 coldpass|web only|https://coldpass.dev|
-coldrelease|public source|https://github.com/TayHCode/coldrelease|release_check.py
-coldverify|public source|https://github.com/TayHCode/coldverify|coldverify
-coldguardian|public source|https://github.com/TayHCode/coldguardian|-m coldguardian.cli
-coldrewind|public source|https://github.com/TayHCode/coldrewind|-m coldrewind.cli
+coldrelease|public source|https://github.com/coldstack-dev/coldrelease|release_check.py
+coldverify|public source|https://github.com/coldstack-dev/coldverify|coldverify
+coldguardian|public source|https://github.com/coldstack-dev/coldguardian|-m coldguardian.cli
+coldrewind|public source|https://github.com/coldstack-dev/coldrewind|-m coldrewind.cli
 coldcontribute|parked||'
 
 if [ -n "${BASH_SOURCE:-}" ] && [ "$BASH_SOURCE" != "$0" ]; then return 0; fi
 
-exec bash -c '. /dev/fd/3' "$0" "$catalog" "$@" 3<<'COLD_INSTALLER'
+exec bash -c 'IFS= read -rd "" installer <&3; eval "$installer"' "$0" "$catalog" "$@" 3<<'COLD_INSTALLER'
 exec 3<&-
 catalog=$1
 shift
@@ -107,6 +108,23 @@ for command in git python3; do
         exit 1
     fi
 done
+
+if [ "$mode" = preview ] || [ "$mode" = apply ] || [ "$mode" = check ]; then
+    while read -r name minimum; do
+        if ! grep -q "^$name " <<< "$tools"; then continue; fi
+        if found=$(python3 -I -c 'import sys
+print("%d.%d" % sys.version_info[:2])
+sys.exit(sys.version_info < tuple(map(int, sys.argv[1].split("."))))' "$minimum"); then continue; fi
+        reason="it needs Python $minimum or newer and python3 is $found"
+        if [ -n "$selected" ]; then
+            printf 'Cannot install %s: %s\n' "$name" "$reason" >&2
+            exit 1
+        fi
+        printf 'Skipping %s: %s\n' "$name" "$reason"
+        tools=$(grep -v "^$name " <<< "$tools")
+    done <<< 'coldcleaner 3.14
+coldverify 3.12'
+fi
 
 if [ ! -t 0 ]; then
     export GIT_TERMINAL_PROMPT=0 GIT_ASKPASS=false
@@ -233,7 +251,6 @@ on_path() {
 launcher() {
     local dir=$1 entry=$2
     case $entry in
-        install.sh) printf 'exec /bin/sh %q "$@"\n' "$dir/$entry" ;;
         -m\ *) printf 'PYTHONPATH=%q exec python3 -P %s "$@"\n' "$dir" "$entry" ;;
         *.py) printf 'exec python3 %q "$@"\n' "$dir/$entry" ;;
         *) printf 'exec %q "$@"\n' "$dir/$entry" ;;
@@ -249,13 +266,19 @@ launcher_matches() {
     ours "$1" && [ "$(cat "$1")" = "$(launcher_body "$2" "$3")" ]
 }
 
+origin_after_organization_move() {
+    local origin
+    origin=$(git -C "$1" config --local --get-all remote.origin.url) || return
+    printf '%s\n' "${origin/#https:\/\/github.com\/TayHCode\//https://github.com/coldstack-dev/}"
+}
+
 checkout_state() {
     if [ ! -e "$1" ] && [ ! -L "$1" ]; then
         echo absent
     elif [ ! -L "$1" ] && [ -d "$1/.git" ] && [ ! -L "$1/.git" ] &&
         [ "$(git -C "$1" rev-parse --show-toplevel 2>/dev/null)" = "$(cd "$1" && pwd -P)" ] &&
         git -C "$1" rev-parse -q --verify 'HEAD^{commit}' >/dev/null 2>&1 &&
-        [ "$(git -C "$1" config --local --get-all remote.origin.url)" = "$2" ]; then
+        [ "$(origin_after_organization_move "$1")" = "$2" ]; then
         echo ready
     else
         echo foreign
@@ -399,11 +422,6 @@ run() {
     if [ "$mode" = apply ]; then "$@"; fi
 }
 
-if [ "$mode" = apply ] && [ "${0##*/}" != install.sh ]; then
-    printf '%s\n' 'Save the installer as install.sh and run sh install.sh --apply.' >&2
-    exit 2
-fi
-
 if [ "$mode" = apply ] || [ "$mode" = update ] || [ "$mode" = uninstall ]; then
     if [ ! -d "$cold_home" ] || [ ! -d "$cold_bin" ]; then
         preflight
@@ -427,8 +445,9 @@ fi
 preflight
 
 if [ "$mode" = update ]; then
-    while read -r name _; do
+    while read -r name repo _; do
         if missing_pair "$cold_home/$name" "$cold_bin/$name"; then continue; fi
+        git -C "$cold_home/$name" remote set-url origin "$repo"
         git -C "$cold_home/$name" pull --ff-only origin
     done <<< "$tools"
     exit
@@ -498,7 +517,10 @@ while read -r name repo entry; do
     dir=$cold_home/$name
     link=$cold_bin/$name
     case $(checkout_state "$dir" "$repo") in
-        ready) run git -C "$dir" pull --ff-only origin ;;
+        ready)
+            run git -C "$dir" remote set-url origin "$repo"
+            run git -C "$dir" pull --ff-only origin
+            ;;
         absent)
             run git clone "$repo" "$stage/$name"
             run mv "$stage/$name" "$dir"
@@ -517,7 +539,12 @@ done <<< "$tools"
 
 printf '+ install CLI %q\n' "$cold_bin/cold"
 if [ "$mode" = apply ]; then
-    launcher_body "$(cd "$(dirname "$0")" && pwd -P)" install.sh > "$bin_stage/cold"
+    {
+        printf '#!/usr/bin/env bash\n%s\nset -- %q "$@"\n' "$marker" "$catalog"
+        printf '%s\n' "IFS= read -rd '' installer <<'COLD_INSTALLER'"
+        # shellcheck disable=SC2154
+        printf '%sCOLD_INSTALLER\n%s\n' "$installer" "eval \"\$installer\""
+    } > "$bin_stage/cold"
     chmod 755 "$bin_stage/cold"
     mv "$bin_stage/cold" "$cold_bin/cold"
     printf '\nInstalled. Run cold status to see each tool.\n'
@@ -526,3 +553,4 @@ if [ "$mode" = apply ]; then
     fi
 fi
 COLD_INSTALLER
+}

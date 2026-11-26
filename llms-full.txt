@@ -11,7 +11,7 @@ The tool entries below describe public interfaces where available.
 
 Run CI jobs in disposable VMs on your own hardware. Availability: public source. Cold install: yes.
 Install with `cold install coldbox --apply`. Run `coldbox --help` for commands.
-See [Coldbox documentation](https://github.com/TayHCode/coldbox) for setup and usage.
+See [Coldbox documentation](https://github.com/coldstack-dev/coldbox) for setup and usage.
 coldbox status --json. The API uses exit codes 75 and 125 for retry and infrastructure failure.
 coldbox api version
 
@@ -19,14 +19,14 @@ coldbox api version
 
 Preview disk cleanup and verify archives before deleting files. Availability: public source. Cold install: yes.
 Install with `cold install coldcleaner --apply`. Run `coldcleaner --help` for commands.
-See [Coldcleaner documentation](https://github.com/TayHCode/coldcleaner) for setup and usage.
+See [Coldcleaner documentation](https://github.com/coldstack-dev/coldcleaner) for setup and usage.
 coldcleaner doctor --json reports prerequisites. Exit 0 means success, 1 a finding or refusal, and 2 an error.
 
 ## Coldlocker
 
 Share skills, rules, hooks and MCP across agents. Availability: public source. Cold install: yes.
 Install with `cold install coldlocker --apply`. Run `coldlocker --help` for commands.
-See [Coldlocker documentation](https://github.com/TayHCode/coldlocker) for setup and usage.
+See [Coldlocker documentation](https://github.com/coldstack-dev/coldlocker) for setup and usage.
 coldlocker scan --json emits the inventory.
 Connect a client to the stdio MCP endpoint, then use hub_list_skills and hub_get_item.
 
@@ -34,7 +34,7 @@ Connect a client to the stdio MCP endpoint, then use hub_list_skills and hub_get
 
 Scan for recurring agent mistakes and rerun proofs from the lesson library. Availability: public source. Cold install: yes.
 Install with `cold install coldfix --apply`. Run `coldfix --help` for commands.
-See [Coldfix documentation](https://github.com/TayHCode/coldfix) for setup and usage.
+See [Coldfix documentation](https://github.com/coldstack-dev/coldfix) for setup and usage.
 coldfix check --json REPO exits 0 for clean, 1 for findings and 2 for incomplete or error.
 See the repository for ColdRecall hook setup.
 
@@ -42,7 +42,7 @@ See the repository for ColdRecall hook setup.
 
 Search a local vault of agent conversations and repository notes. Availability: public source. Cold install: yes.
 Install with `cold install coldvault --apply`. Run `coldvault --help` for commands.
-See [Coldvault documentation](https://github.com/TayHCode/coldvault) for setup and usage.
+See [Coldvault documentation](https://github.com/coldstack-dev/coldvault) for setup and usage.
 python3 coldvault.py search QUERY --json --vault VAULT returns an object with schema_version 1 and a hits array. Exit 0 means matches, 1 means no matches, and 2 returns a JSON object with an error field.
 
 ## Coldpass
@@ -56,28 +56,28 @@ The downloadable client provides stdio MCP. See https://coldpass.dev/llms.txt.
 
 Scan and verify an export before making it public. Availability: public source. Cold install: yes.
 Install with `cold install coldrelease --apply`. Run `coldrelease --help` for commands.
-See [Coldrelease documentation](https://github.com/TayHCode/coldrelease) for setup and usage.
+See [Coldrelease documentation](https://github.com/coldstack-dev/coldrelease) for setup and usage.
 coldrelease --version --json and coldrelease audit . --json report schema version 1.
 
 ## Coldverify
 
 Replay an observed failure and its fix across two revisions. Availability: public source. Cold install: yes.
 Install with `cold install coldverify --apply`. Run `coldverify --help` for commands.
-See [Coldverify documentation](https://github.com/TayHCode/coldverify) for setup and usage.
+See [Coldverify documentation](https://github.com/coldstack-dev/coldverify) for setup and usage.
 coldverify --version --json returns schema_version, exit_code and version data.
 
 ## Coldguardian
 
 Check approved home networks for changes and risky services. Availability: public source. Cold install: yes.
 Install with `cold install coldguardian --apply`. Run `coldguardian --help` for commands.
-See [Coldguardian documentation](https://github.com/TayHCode/coldguardian) for setup and usage.
+See [Coldguardian documentation](https://github.com/coldstack-dev/coldguardian) for setup and usage.
 coldguardian status --json validates local configuration without starting a scan.
 
 ## ColdRewind
 
 Checkpoint a workspace and restore local files and Git state. Availability: public source. Cold install: yes.
 Install with `cold install coldrewind --apply`. Run `coldrewind --help` for commands.
-See [ColdRewind documentation](https://github.com/TayHCode/coldrewind) for setup and usage.
+See [ColdRewind documentation](https://github.com/coldstack-dev/coldrewind) for setup and usage.
 coldrewind status --json reports the workspace snapshot backend and last capture error.
 coldrewind init --client claude installs hooks for Claude Code. The codex and opencode clients are also supported.
 

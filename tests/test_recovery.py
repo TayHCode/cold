@@ -66,7 +66,96 @@ class RecoveryTest(unittest.TestCase):
         saved.parent.mkdir()
         saved.write_bytes(INSTALL.read_bytes())
         self.cmd("sh", saved, "install", "coldvault", "--apply")
+        shutil.rmtree(saved.parent)
         self.assertIn("  installed", self.cmd(self.bin / "cold", "status").stdout)
+
+    def test_piped_apply_installs_a_working_cold(self):
+        for name in ("COLD_HOME", "COLD_BIN"):
+            del self.env[name]
+        path = self.env["PATH"]
+        for shell in ("sh", "bash"):
+            with self.subTest(shell=shell):
+                home = self.root / f"home-{shell}"
+                cwd = self.root / f"cwd-{shell}"
+                home.mkdir()
+                cwd.mkdir()
+                self.env.update(HOME=str(home), PATH=path)
+                subprocess.run([shell, "-s", "--", "--apply"], input=INSTALL.read_bytes(), cwd=cwd,
+                               env=self.env, check=True, capture_output=True, timeout=60)
+                self.assertEqual(list(cwd.iterdir()), [])
+                cold = home / ".local/bin/cold"
+                status = self.cmd(cold, "status").stdout
+                self.assertEqual(status.count("  installed"), len(TOOLS), status)
+                self.env["PATH"] = str(cold.parent) + os.pathsep + path
+                doctor = json.loads(self.cmd("cold", "doctor", "--json").stdout)
+                self.assertEqual(doctor["status"], "healthy")
+                self.assertEqual(len(doctor["tools"]), len(TOOLS))
+                self.cmd("cold", "uninstall", "coldvault")
+                piped = cold.read_bytes()
+                self.cmd("cold", "install", "coldvault", "--apply")
+                self.assertEqual(cold.read_bytes(), piped)
+                self.assertTrue((home / "cold-tools/coldvault/vault_kit.py").is_file())
+
+    def test_truncated_download_changes_nothing(self):
+        script = INSTALL.read_bytes()
+        shebang = script.index(b"\n") + 1
+        cuts = [index + 1 for index in range(shebang, len(script) - 1) if script[index] == ord("\n")]
+        self.assertGreater(len(cuts), 500)
+        for shell in ("sh", "bash"):
+            for cut in cuts:
+                result = subprocess.run([shell, "-s", "--", "--apply"], input=script[:cut], cwd=self.root,
+                                        env=self.env, capture_output=True, timeout=60)
+                self.assertNotEqual(result.returncode, 0, f"{shell} ran {cut} of {len(script)} bytes")
+                self.assertFalse(self.tools.exists() or self.bin.exists(),
+                                 f"{shell} installed from {cut} of {len(script)} bytes")
+
+    def pretend_python(self, version):
+        real = shutil.which("python3", path=os.environ["PATH"])
+        self.shim("python3", 'if [ "$1" = -I ] && [ "$2" = -c ]; then\n'
+                  '  code=$3; shift 3\n'
+                  f'  exec "{real}" -I -c "import sys; sys.version_info = {version}; $code" "$@"\n'
+                  'fi\n' + f'exec "{real}" "$@"\n')
+
+    def test_full_install_skips_tools_needing_a_newer_python(self):
+        self.env["PATH"] = str(self.bin) + os.pathsep + self.env["PATH"]
+        self.pretend_python((3, 12))
+        applied = self.apply().stdout
+        self.assertIn("Skipping coldcleaner: it needs Python 3.14 or newer and python3 is 3.12\n", applied)
+        self.assertNotIn("Skipping coldverify", applied)
+        installed = set(TOOLS) - {"coldcleaner"}
+        self.assertEqual({p.name for p in self.tools.iterdir()}, installed)
+        self.assertEqual({p.name for p in self.bin.iterdir()}, installed | {"cold"})
+        self.cmd(INSTALL, "--check")
+        self.cmd("cold", "doctor")
+        refused = self.cmd("cold", "install", "coldcleaner", "--apply", check=False)
+        self.assertEqual(refused.returncode, 1, refused.stdout)
+        self.assertIn("Cannot install coldcleaner: it needs Python 3.14 or newer and python3 is 3.12\n",
+                      refused.stderr)
+        self.assertEqual({p.name for p in self.tools.iterdir()}, installed)
+        self.pretend_python((3, 11))
+        preview = self.cmd(INSTALL).stdout
+        self.assertIn("Skipping coldverify: it needs Python 3.12 or newer and python3 is 3.11\n", preview)
+        self.assertNotIn("coldverify.git", preview)
+
+    def test_checkout_from_the_previous_organization_is_adopted(self):
+        self.env["PATH"] = str(self.bin) + os.pathsep + self.env["PATH"]
+        self.cmd(INSTALL, "install", "coldvault", "--apply")
+        checkout = self.tools / "coldvault"
+        current = self.urls["coldvault"]
+        previous = current.replace("/coldstack-dev/", "/TayHCode/")
+        self.assertNotEqual(previous, current)
+        self.cmd(self.git, "config", "--global", "--add",
+                 f"url.{self.root / 'coldvault.git'}.insteadOf", previous)
+        for command in (("update", "coldvault"), ("install", "coldvault", "--apply")):
+            with self.subTest(command=command):
+                self.cmd(self.git, "-C", checkout, "remote", "set-url", "origin", previous)
+                self.assertIn("  installed", self.cmd("cold", "status").stdout)
+                self.cmd("cold", "doctor")
+                self.cmd("cold", *command)
+                origin = self.cmd(self.git, "-C", checkout, "config", "--local", "remote.origin.url")
+                self.assertEqual(origin.stdout.strip(), current)
+        self.cmd("cold", "uninstall", "coldvault")
+        self.assertFalse(checkout.exists())
 
     def shim(self, name, body):
         path = self.shims / name

@@ -3,7 +3,7 @@
   "quickstart": [
     {
       "file": "README.md",
-      "line": 51,
+      "line": 50,
       "argv": [
         "./cold"
       ]
