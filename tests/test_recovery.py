@@ -256,6 +256,10 @@ class RecoveryTest(unittest.TestCase):
         preview = self.cmd(cold, "install", "coldvault").stdout
         self.assertEqual(preview.count("+ git clone "), 1)
         self.assertIn("coldvault.git", preview)
+        self.assertEqual(
+            preview.splitlines()[-1],
+            "Preview only. Nothing was changed. Re-run with --apply.",
+        )
         self.assertFalse(self.tools.exists())
         self.assertFalse(self.bin.exists())
         self.bin.mkdir()
@@ -281,6 +285,86 @@ class RecoveryTest(unittest.TestCase):
         self.assertFalse((self.bin / "coldvault").exists())
         self.assertEqual(self.cmd("cold", "list").stdout, listing)
         self.assertEqual(other.read_text(), "preserve me")
+
+    def test_status_exit_codes_and_json(self):
+        path = self.env["PATH"]
+        ready_path = str(self.bin) + os.pathsep + path
+
+        empty_text = self.cmd(INSTALL, "status", check=False)
+        self.assertEqual(empty_text.returncode, 1, empty_text.stdout + empty_text.stderr)
+        self.assertIn("  not installed", empty_text.stdout)
+        self.assertIn("No tools installed", empty_text.stdout)
+
+        empty_json = self.cmd(INSTALL, "status", "--json", check=False)
+        self.assertEqual(empty_json.returncode, 1, empty_json.stdout + empty_json.stderr)
+        report = json.loads(empty_json.stdout)
+        self.assertEqual(report["schema_version"], 1)
+        self.assertEqual(report["status"], "not_installed")
+        self.assertEqual(report["installed_count"], 0)
+        self.assertFalse(report["on_path"])
+        self.assertIn("No tools installed", report["message"])
+        self.assertEqual(len(report["tools"]), len(TOOLS))
+        self.assertTrue(all(tool["status"] == "not installed" for tool in report["tools"]))
+
+        self.cmd(INSTALL, "install", "coldvault", "--apply")
+        cold = self.bin / "cold"
+
+        off_path = self.cmd(cold, "status", "--json", check=False)
+        self.assertEqual(off_path.returncode, 0, off_path.stdout + off_path.stderr)
+        report = json.loads(off_path.stdout)
+        self.assertEqual(report["schema_version"], 1)
+        self.assertEqual(report["status"], "installed")
+        self.assertEqual(report["installed_count"], 1)
+        self.assertFalse(report["on_path"])
+        by_name = {tool["name"]: tool["status"] for tool in report["tools"]}
+        self.assertEqual(by_name["coldvault"], "installed")
+        self.assertEqual(by_name["coldbox"], "not installed")
+
+        self.env["PATH"] = ready_path
+        on_path = self.cmd("cold", "status", "--json", check=False)
+        self.assertEqual(on_path.returncode, 0, on_path.stdout + on_path.stderr)
+        self.assertTrue(json.loads(on_path.stdout)["on_path"])
+
+        launcher = self.bin / "coldvault"
+        launcher.chmod(0o644)
+        try:
+            nonexec_text = self.cmd("cold", "status", check=False)
+            self.assertEqual(nonexec_text.returncode, 1, nonexec_text.stdout + nonexec_text.stderr)
+            self.assertIn("incomplete or foreign", nonexec_text.stdout)
+
+            nonexec_json = self.cmd("cold", "status", "--json", check=False)
+            self.assertEqual(nonexec_json.returncode, 1, nonexec_json.stdout + nonexec_json.stderr)
+            report = json.loads(nonexec_json.stdout)
+            self.assertEqual(report["status"], "problem")
+            self.assertEqual(report["installed_count"], 0)
+            by_name = {tool["name"]: tool["status"] for tool in report["tools"]}
+            self.assertEqual(by_name["coldvault"], "incomplete or foreign")
+        finally:
+            launcher.chmod(0o755)
+
+        saved = launcher.with_suffix(".saved")
+        launcher.rename(saved)
+        try:
+            broken_text = self.cmd("cold", "status", check=False)
+            self.assertEqual(broken_text.returncode, 1, broken_text.stdout + broken_text.stderr)
+            self.assertIn("incomplete or foreign", broken_text.stdout)
+
+            broken_json = self.cmd("cold", "status", "--json", check=False)
+            self.assertEqual(broken_json.returncode, 1, broken_json.stdout + broken_json.stderr)
+            report = json.loads(broken_json.stdout)
+            self.assertEqual(report["status"], "problem")
+            self.assertEqual(report["installed_count"], 0)
+            by_name = {tool["name"]: tool["status"] for tool in report["tools"]}
+            self.assertEqual(by_name["coldvault"], "incomplete or foreign")
+        finally:
+            saved.rename(launcher)
+
+        invalid = self.cmd("cold", "status", "--json", "--unexpected", check=False)
+        self.assertEqual(invalid.returncode, 2, invalid.stdout + invalid.stderr)
+        report = json.loads(invalid.stdout)
+        self.assertEqual(report["schema_version"], 1)
+        self.assertEqual(report["status"], "error")
+        self.assertIn("Invalid", report["error"])
 
     def test_doctor_json_with_closed_stdin(self):
         path = self.env["PATH"]

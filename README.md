@@ -24,13 +24,13 @@ Coldbox records what ran in CI. Coldfix can turn recurring failures into proven 
 | Coldcontribute | Find contribution opportunities requested by maintainers. | parked | no |
 <!-- catalog:end -->
 
-For agent discovery, see [tools.json](tools.json), [llms.txt](llms.txt) and
+For agent discovery, see [AGENTS.md](AGENTS.md), [tools.json](tools.json), [llms.txt](llms.txt) and
 [llms-full.txt](llms-full.txt). Edit `tools.json` and run
 `python3 render_catalog.py` to regenerate the standalone installer catalog, this table and the text indexes.
 
 ## Install and manage tools
 
-Once the website serves this revision, preview the install on Linux with this command.
+Preview the install on Linux or macOS with this command.
 
 ```sh
 curl -fsSL https://coldstack.dev/install.sh | sh
@@ -52,16 +52,25 @@ Clone this repository using GitHub’s **Code** menu. From the checkout, run `./
 ./cold install coldvault --apply
 ```
 
+Sample `./cold list` output:
+
+```text
+tool	availability	cold_install	url
+coldbox	public source	yes	https://github.com/coldstack-dev/coldbox
+coldcleaner	public source	yes	https://github.com/coldstack-dev/coldcleaner
+```
+
 Apply installs the named tools and a self-contained `cold` command. It keeps working after you delete the umbrella clone or a downloaded `install.sh`. The default checkout directory is `~/cold-tools` and the default launcher directory is `~/.local/bin`. To override them, export `COLD_HOME` and `COLD_BIN` for all lifecycle commands. Put the launcher directory on your `PATH`.
 
 ```sh
 cold status
+cold status --json
 cold doctor --json
 cold update coldvault
 cold uninstall coldvault
 ```
 
-`status` shows each tool supported by the installer and its installed revision. `doctor` checks installed tools and reports incomplete installs. `update` fast-forwards installed checkouts, either all of them or the names supplied. `uninstall` takes exactly one tool and requires both a marked launcher and a checkout with the expected origin. It refuses checkouts with local work, including ignored files. Generated Python bytecode caches for source files in the checkout can be removed along with the tool. Other tools, the umbrella launcher, and configuration outside the checkout stay in place.
+`status` shows each tool supported by the installer and its installed revision (`--json` emits schema version 1; exits 0 when at least one tool is installed and healthy, 1 when nothing is installed or a tool is incomplete, and 2 on error). `doctor` checks installed tools and reports incomplete installs. `update` fast-forwards installed checkouts, either all of them or the names supplied. `uninstall` takes exactly one tool and requires both a marked launcher and a checkout with the expected origin. It refuses checkouts with local work, including ignored files. Generated Python bytecode caches for source files in the checkout can be removed along with the tool. Other tools, the umbrella launcher, and configuration outside the checkout stay in place.
 
 `cold doctor --json` emits one object with `schema_version: 1`, a top-level `status`, and a `tools` array. Each tool reports whether its launcher runs (`launcher_healthy`) and whether the current PATH resolves that launcher (`shell_visible`). Exit 0 means `healthy`, exit 1 means `problem`, and exit 2 means `error` with an `error` message. A missing PATH entry, a shadowed launcher, or an install with no tools yields exit 1. Git credential prompts are disabled when stdin is not a terminal.
 
@@ -89,6 +98,10 @@ The helper uses existing checkouts named `coldlocker`, `coldrewind`, and
 `coldfix` under `COLD_HOME`. The public Coldlocker checkout supports MCP
 connections. To add Stop and ColdRecall hooks, use a Coldlocker checkout that
 includes `hooks/install.py`. The preview reports missing products and clients.
+
+## Privacy
+
+No telemetry. Network: fetching install.sh from coldstack.dev (when using the curl one-liner) and git clone/pull from github.com/coldstack-dev only.
 
 ## Limitations
 

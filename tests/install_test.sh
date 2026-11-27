@@ -42,6 +42,7 @@ out=$("$install" 2>&1); status=$?
 ok 'preview exits 0' equals "$status" 0
 ok 'preview prints 9 clones' equals "$(count "$out" '^\+ git clone ')" 9
 ok 'preview prints 9 command writes' equals "$(count "$out" "^\\+ write ")" 9
+ok 'preview ends with apply hint' equals "$(printf '%s\n' "$out" | tail -n 1)" 'Preview only. Nothing was changed. Re-run with --apply.'
 ok 'preview writes nothing' test ! -e "$home" -a ! -e "$bin"
 
 out=$("$install" --check 2>&1); status=$?

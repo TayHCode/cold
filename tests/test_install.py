@@ -15,6 +15,10 @@ class InstallTest(unittest.TestCase):
             env = {"HOME": home, "PATH": os.defpath}
             expected = subprocess.check_output([installer], cwd=home, env=env)
             self.assertIn(b"+ git clone ", expected)
+            self.assertEqual(
+                expected.splitlines()[-1],
+                b"Preview only. Nothing was changed. Re-run with --apply.",
+            )
             for shell in ("sh", "bash"):
                 with self.subTest(shell=shell):
                     preview = subprocess.run([shell], input=installer.read_bytes(),

@@ -21,7 +21,7 @@ shift
 set -euo pipefail
 
 usage() {
-    printf '%s\n' 'cold [install [TOOL ...] [--apply]]' 'cold list | status | doctor [--json]' \
+    printf '%s\n' 'cold [install [TOOL ...] [--apply]]' 'cold list | status [--json] | doctor [--json]' \
         'cold update [TOOL ...] | uninstall TOOL' 'cold agent-setup [--apply]' 'install.sh [--apply | --check]'
 }
 
@@ -35,7 +35,7 @@ doctor_error() {
 }
 
 bad_args() {
-    if [ "$json" = yes ]; then doctor_error 'Invalid doctor arguments'; fi
+    if [ "$json" = yes ]; then doctor_error "Invalid $mode arguments"; fi
     usage >&2
     exit 2
 }
@@ -49,7 +49,13 @@ case ${1-} in
     --check) [ "$#" = 1 ] || bad_args; mode=check; shift ;;
     update) mode=update; shift ;;
     uninstall) [ "$#" = 2 ] || bad_args; mode=uninstall; shift ;;
-    list|status) [ "$#" = 1 ] || bad_args; mode=$1; shift ;;
+    list) [ "$#" = 1 ] || bad_args; mode=$1; shift ;;
+    status)
+        mode=status
+        shift
+        if [ "${1-}" = --json ]; then json=yes; shift; fi
+        [ "$#" = 0 ] || bad_args
+        ;;
     agent-setup)
         mode=agent-setup
         shift
@@ -101,7 +107,7 @@ done
 if [ -n "$selected" ]; then tools=$selected; fi
 for command in git python3; do
     if ! command -v "$command" >/dev/null 2>&1; then
-        if [ "$mode" = doctor ] || [ "$mode" = check ]; then
+        if [ "$mode" = doctor ] || [ "$mode" = check ] || [ "$json" = yes ]; then
             doctor_error "Required command not found: $command"
         fi
         printf 'Required command not found: %s\n' "$command" >&2
@@ -290,7 +296,7 @@ missing_pair() {
 }
 
 check() {
-    local failed=0 checked=no name repo entry dir link found version status state healthy visible
+    local failed=0 checked=no installed=0 incomplete=0 name repo entry dir link found version status state healthy visible
     while read -r name repo entry; do
         dir=$cold_home/$name
         link=$cold_bin/$name
@@ -309,9 +315,14 @@ check() {
         visible=false
         found=
         if [ "$mode" = status ]; then
-            if missing_pair "$dir" "$link"; then status='not installed'
-            elif [ "$state" = ready ] && launcher_matches "$link" "$dir" "$entry"; then status=installed
-            else status='incomplete or foreign'
+            if missing_pair "$dir" "$link"; then
+                status='not installed'
+            elif [ "$state" = ready ] && [ -x "$link" ] && launcher_matches "$link" "$dir" "$entry"; then
+                status=installed
+                installed=$((installed + 1))
+            else
+                status='incomplete or foreign'
+                incomplete=$((incomplete + 1))
             fi
         else
             if found=$(command -v "$name") && [ "$found" -ef "$link" ] && [ -x "$found" ]; then
@@ -346,14 +357,27 @@ check() {
         if [ "$json" = no ]; then printf '%s\n' "$check_message"; fi
         return 1
     fi
-    if [ "$mode" = status ] && ! on_path; then
-        printf '%s is not on PATH. Open a new login shell or add it to PATH.\n' "$cold_bin"
+    if [ "$mode" = status ]; then
+        if [ "$installed" -eq 0 ] && [ "$incomplete" -eq 0 ]; then
+            check_message='No tools installed; run cold install TOOL --apply'
+            failed=1
+        elif [ "$incomplete" -gt 0 ]; then
+            failed=1
+        fi
+        if [ "$json" = no ]; then
+            if [ -n "${check_message-}" ]; then printf '%s\n' "$check_message"; fi
+            if ! on_path; then
+                printf '%s is not on PATH. Open a new login shell or add it to PATH.\n' "$cold_bin"
+            fi
+        fi
     fi
     return "$failed"
 }
 
 if [ "$json" = yes ]; then
     rc=0
+    path_ready=false
+    if on_path; then path_ready=true; fi
     report=$(
         {
             result=0
@@ -361,25 +385,43 @@ if [ "$json" = yes ]; then
             check || result=$?
             printf '%s\0' "$result" "$check_message"
         } | python3 -I -c 'import json, os, sys
+mode, on_path = sys.argv[1], sys.argv[2] == "true"
 *fields, code, message, _ = os.fsdecode(sys.stdin.buffer.read()).split("\0")
 code = int(code)
 rows = iter(fields)
-tools = [
-    dict(name=name, path=path, version=version, status=status,
-         launcher_healthy=healthy == "true", shell_visible=visible == "true")
-    for name, path, version, status, healthy, visible in zip(rows, rows, rows, rows, rows, rows, strict=True)
-]
-report = dict(schema_version=1, status=("healthy", "problem", "error")[code], tools=tools)
+if mode == "status":
+    tools = [
+        dict(name=name, path=path, version=version, status=status)
+        for name, path, version, status, _, _ in zip(rows, rows, rows, rows, rows, rows, strict=True)
+    ]
+    installed = sum(1 for tool in tools if tool["status"] == "installed")
+    if code == 2:
+        top = "error"
+    elif code == 0:
+        top = "installed"
+    elif installed == 0 and all(tool["status"] == "not installed" for tool in tools):
+        top = "not_installed"
+    else:
+        top = "problem"
+    report = dict(schema_version=1, status=top, installed_count=installed, on_path=on_path, tools=tools)
+else:
+    tools = [
+        dict(name=name, path=path, version=version, status=status,
+             launcher_healthy=healthy == "true", shell_visible=visible == "true")
+        for name, path, version, status, healthy, visible in zip(rows, rows, rows, rows, rows, rows, strict=True)
+    ]
+    report = dict(schema_version=1, status=("healthy", "problem", "error")[code], tools=tools)
 if message:
     report["error" if code == 2 else "message"] = message
 print(json.dumps(report))
-sys.exit(code)'
+sys.exit(code)' "$mode" "$path_ready"
     ) || rc=$?
-    if [ -z "$report" ]; then doctor_error 'Could not generate doctor report'; fi
+    if [ -z "$report" ]; then doctor_error "Could not generate $mode report"; fi
     printf '%s\n' "$report"
     exit "$rc"
 fi
 if [ "$mode" = check ] || [ "$mode" = status ] || [ "$mode" = doctor ]; then
+    check_message=
     check
     exit
 fi
@@ -551,6 +593,8 @@ if [ "$mode" = apply ]; then
     if ! on_path; then
         printf '%s is not on PATH. Open a new login shell or add it to PATH.\n' "$cold_bin"
     fi
+else
+    printf '\nPreview only. Nothing was changed. Re-run with --apply.\n'
 fi
 COLD_INSTALLER
 }
